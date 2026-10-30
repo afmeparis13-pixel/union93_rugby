@@ -170,7 +170,12 @@ tr.me td{background:var(--good-bg)}
 .podium .pscore{font-family:var(--display);font-weight:800;font-size:1.25rem}
 .podium .pscore::after{content:" /17";font-size:.8rem;color:var(--muted);font-weight:700}
 .podium .ptime{font-size:.9rem;color:var(--muted);min-width:3.2em;text-align:right}
-.weeks{display:flex;flex-direction:column;gap:18px}
+.tgroup{display:flex;flex-direction:column;gap:6px}
+.tgroup + .tgroup{margin-top:10px}
+.tgtitle{font-family:var(--display);font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.tgempty{font-size:.9rem;color:var(--muted);padding:4px 2px}
+#top3List{display:flex;flex-direction:column}
+.weeks{display:flex;flex-direction:column;gap:22px}
 .week{display:flex;flex-direction:column;gap:6px}
 #boardFilter{gap:6px}
 @media (max-width:420px){th,td{padding:9px 3px}td.n{font-size:1.02rem}th{font-size:.7rem;letter-spacing:.03em}td.n.t{font-size:.92rem}}
@@ -238,11 +243,6 @@ tr.me td{background:var(--good-bg)}
           <span class="paren" aria-hidden="true">)</span>
         </div>
       </div>
-      <div class="rappel" role="note">
-        <b>RAPPEL ⚠️ :</b>
-        <span>Catégorie C : X et Access</span>
-        <span>Catégorie B : XV Élite</span>
-      </div>
       <div style="display:flex;flex-direction:column;gap:8px">
         <span class="lbl" id="roleLbl">Je suis</span>
         <div class="roles" role="radiogroup" aria-labelledby="roleLbl">
@@ -264,6 +264,11 @@ tr.me td{background:var(--good-bg)}
         <ul class="plain hist" id="myHistList"></ul>
       </div>
       <button class="btn" id="startBtn">Coup d'envoi</button>
+      <div class="rappel" role="note">
+        <b>RAPPEL ⚠️ :</b>
+        <span>Catégorie C : X et Access</span>
+        <span>Catégorie B : XV Élite</span>
+      </div>
     </div>
     <div class="panel top3">
       <div class="adminbar"><h3 class="grow">Top 3 de la semaine</h3><button class="btn secondary small" id="top3More">Historique</button></div>
@@ -953,13 +958,20 @@ try {
     });
     return ol;
   }
+  // Top 3 séparés : joueuses d'abord, puis entraîneur(e)s
+  const GROUPS=[["joueuse","Joueuses","Pas encore de joueuse cette semaine."],["entraineur","Entraîneur(e)s","Pas encore d'entraîneur(e) cette semaine."]];
+  function groupBlock(title, rows, me, emptyText){
+    const box=el("div",{class:"tgroup"},el("p",{class:"tgtitle",text:title}));
+    if(rows.length) box.append(podium(rows, me)); else box.append(el("p",{class:"tgempty",text:emptyText}));
+    return box;
+  }
   function renderTop3(){
-    const start=weekStart(Date.now());
-    const rows=bestPerPerson(scores.filter(s=>s&&(s.at||0)>=start));
+    const start=weekStart(Date.now()), me=readPlayer().key;
+    const week=scores.filter(s=>s&&(s.at||0)>=start);
     $("top3Week").textContent="Semaine "+weekLabel(start);
     const box=$("top3List"); box.replaceChildren();
-    if(rows.length) box.append(podium(rows, readPlayer().key));
-    $("top3Empty").hidden = rows.length>0;
+    GROUPS.forEach(([r,title,empty])=>box.append(groupBlock(title, bestPerPerson(week.filter(s=>s.role===r)), me, empty)));
+    $("top3Empty").hidden = true;
   }
   function renderWeeks(){
     const weeks={};
@@ -967,11 +979,15 @@ try {
     const box=$("weeksList"); box.replaceChildren();
     const me=readPlayer().key, current=weekStart(Date.now());
     Object.keys(weeks).map(Number).sort((a,b)=>b-a).forEach(w=>{
-      const rows=bestPerPerson(weeks[w]);
-      box.append(el("div",{class:"week"},
+      const all=weeks[w], n=bestPerPerson(all).length;
+      const wk=el("div",{class:"week"},
         el("h3",{text:(w===current?"Cette semaine · ":"Semaine ")+weekLabel(w)}),
-        el("p",{class:"muted",style:"font-size:.85rem",text:rows.length+(rows.length>1?" participants":" participant")}),
-        podium(rows, me)));
+        el("p",{class:"muted",style:"font-size:.85rem",text:n+(n>1?" participants":" participant")}));
+      GROUPS.forEach(([r,title])=>wk.append(groupBlock(title, bestPerPerson(all.filter(s=>s.role===r)), me, "Personne.")));
+      // scores faits avant l'ajout du choix Joueuse / Entraîneur(e)
+      const sans=bestPerPerson(all.filter(s=>s.role!=="joueuse"&&s.role!=="entraineur"));
+      if(sans.length) wk.append(groupBlock("Non précisé", sans, me, ""));
+      box.append(wk);
     });
     $("boardEmpty").hidden = Object.keys(weeks).length>0;
   }
