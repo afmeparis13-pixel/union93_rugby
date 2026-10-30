@@ -315,7 +315,7 @@ tr.me td{background:var(--good-bg)}
   <section id="vAdmin" hidden><div class="wrap">
     <div class="panel" id="adminLogin" hidden>
       <h2>Espace administrateur</h2>
-      <p class="muted" style="font-size:.95rem" id="loginHelp">Connecte-toi avec ton compte administrateur du site AFME.</p>
+      <p class="muted" style="font-size:.95rem" id="loginHelp">Connecte-toi avec le compte administrateur du quiz.</p>
       <form id="loginForm" novalidate style="display:flex;flex-direction:column;gap:12px">
         <div style="display:flex;flex-direction:column;gap:6px"><label for="adminEmail">Identifiant (e-mail)</label><input type="email" id="adminEmail" autocomplete="username"></div>
         <div style="display:flex;flex-direction:column;gap:6px"><label for="adminPass">Mot de passe</label><input type="password" id="adminPass" autocomplete="current-password"></div>
@@ -584,19 +584,19 @@ try {
   const { initializeApp } = await import(V + "firebase-app.js");
   const { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, getDoc } = await import(V + "firebase-firestore.js");
   const { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } = await import(V + "firebase-auth.js");
-  const app = initializeApp({"apiKey":"AIzaSyBLfwDjzg1pJnkIDliXuSzZhppUgNDzGz0","authDomain":"site-afme.firebaseapp.com","projectId":"site-afme","storageBucket":"site-afme.firebasestorage.app","messagingSenderId":"423109659994","appId":"1:423109659994:web:cac92f31cdd8c442d17763"}, "quiz-rugby");
+  const app = initializeApp({"apiKey":"AIzaSyBBnEZitFs3tFe2dycDKwYd7c3S4Ge94fQ","authDomain":"rugbyrules-9e1e7.firebaseapp.com","projectId":"rugbyrules-9e1e7","storageBucket":"rugbyrules-9e1e7.firebasestorage.app","messagingSenderId":"934599973124","appId":"1:934599973124:web:951d5ff3510c9e6920d851"}, "quiz-rugby");
   const fs = getFirestore(app), auth = getAuth(app);
-  const scores = collection(fs, "quizRugbyScores"), questions = collection(fs, "quizQuestions");
+  const scores = collection(fs, "scores"), questions = collection(fs, "questions");
   const authReady = new Promise(r => { const u = onAuthStateChanged(auth, x => { u(); r(x); }); });
   async function isAdmin(u) {
     if (!u) return false;
-    try { const p = await getDoc(doc(fs, "users", u.uid)); return p.exists() && p.data().role === "admin"; } catch (e) { return false; }
+    return ["tomvialaret@gmail.com"].includes(String(u.email || "").toLowerCase());
   }
   window.__setQuizStore({
     listen: (onData, onError) => onSnapshot(scores, s => onData(s.docs.map(d => d.data())), onError),
     add: rec => addDoc(scores, rec),
     listenQuestions: (onData, onError) => onSnapshot(questions, s => onData(s.docs.map(d => ({ ...d.data(), id: d.id }))), onError),
-    saveQuestion: (id, data) => setDoc(doc(fs, "quizQuestions", id), data),
+    saveQuestion: (id, data) => setDoc(doc(fs, "questions", id), data),
     adminMode: "password",
     adminCheck: async () => isAdmin(await authReady),
     adminLogin: async (email, pass) => {
